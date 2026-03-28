@@ -1,0 +1,57 @@
+services:
+  wordpress:
+    image: wordpress:latest
+    container_name: nolantis-gestion-wp
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DEBUG: 1
+    volumes:
+      # ⬇ Monta tu carpeta plugin/ directamente en WordPress
+      - ./plugin:/var/www/html/wp-content/plugins/nolantis-gestion-plugin
+      # ⬇ Persiste WordPress completo (temas, uploads, etc.)
+      - wp_data:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - nolantis-net
+
+  db:
+    image: mysql:8.0
+    container_name: nolantis-gestion-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - nolantis-net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: nolantis-gestion-pma
+    restart: unless-stopped
+    ports:
+      - "8091:80"
+    environment:
+      PMA_HOST: db
+    depends_on:
+      - db
+    networks:
+      - nolantis-net
+
+networks:
+  nolantis-net:
+    driver: bridge
+
+volumes:
+  wp_data:
+  db_data:
