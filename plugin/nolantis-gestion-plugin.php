@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Nolantis Gestión Plugin
+ * Plugin Name:       Nolantis Gestion Plugin
  * Plugin URI:        https://nolantis.com
- * Description:       Plugin de gestión para Nolantis.
+ * Description:       Plugin de gestion para Nolantis.
  * Version:           1.0.0
  * Author:            Nolantis
  * Author URI:        https://nolantis.com
@@ -11,42 +11,38 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-    exit; // Seguridad: evitar acceso directo
+    exit;
 }
 
+define( 'NOLANTIS_VERSION', '1.0.0' );
+define( 'NOLANTIS_PLUGIN_FILE', __FILE__ );
+define( 'NOLANTIS_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'NOLANTIS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-define( 'NOLANTIS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
-<?php
-/**
- * Plugin Name: Nolantis Gestión Plugin
- * Version:     1.0.0
- * Author:      Webs Rentables
- */
+define( 'NOLANTIS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'NOLANTIS_ROOT_PATH', dirname( NOLANTIS_PLUGIN_PATH ) . '/' );
+define( 'NOLANTIS_PLUGIN_LOGO_PATH', NOLANTIS_PLUGIN_PATH . 'logo-nolantis.png' );
+define( 'NOLANTIS_PLUGIN_LOGO_URL', NOLANTIS_PLUGIN_URL . 'logo-nolantis.png' );
+define( 'NOLANTIS_PLUGIN_LOGO_WHITE_PATH', NOLANTIS_PLUGIN_PATH . 'logo-nolantis-blanco.png' );
+define( 'NOLANTIS_PLUGIN_LOGO_WHITE_URL', NOLANTIS_PLUGIN_URL . 'logo-nolantis-blanco.png' );
+define( 'NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH', NOLANTIS_PLUGIN_PATH . 'logo-nolantis-blanco-sf.png' );
+define( 'NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL', NOLANTIS_PLUGIN_URL . 'logo-nolantis-blanco-sf.png' );
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+require_once NOLANTIS_PLUGIN_PATH . 'includes/core.php';
+require_once NOLANTIS_PLUGIN_PATH . 'includes/module-smtp.php';
+require_once NOLANTIS_PLUGIN_PATH . 'includes/module-limit-login.php';
+require_once NOLANTIS_PLUGIN_PATH . 'includes/module-admin-access.php';
+require_once NOLANTIS_PLUGIN_PATH . 'includes/module-login-branding.php';
+require_once NOLANTIS_PLUGIN_PATH . 'includes/admin-ui.php';
 
-define( 'NOLANTIS_VERSION',     '1.0.0' );
-define( 'NOLANTIS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-define( 'NOLANTIS_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
+function nolantis_activate_plugin() {
+    nolantis_register_admin_access_settings();
+    nolantis_sync_admin_access_htaccess();
+    flush_rewrite_rules( false );
+}
+register_activation_hook( __FILE__, 'nolantis_activate_plugin' );
 
-// ── Auto-updater desde GitHub ──────────────────────────────
-require_once NOLANTIS_PLUGIN_PATH . 'vendor/autoload.php';
-
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
-$updateChecker = PucFactory::buildUpdateChecker(
-    'https://github.com/GinesPalazon/nolantis-gestion-plugin/',
-    __FILE__,
-    'nolantis-gestion-plugin'
-);
-
-// Usa los GitHub Releases como fuente de actualización
-$updateChecker->getVcsApi()->enableReleaseAssets();
-// ──────────────────────────────────────────────────────────
-
-// Tu código del plugin a partir de aquí...
-
-// Tu código empieza aquí
-add_action( 'init', function() {
-    // Inicialización del plugin
-});
+function nolantis_deactivate_plugin() {
+    nolantis_remove_admin_access_htaccess_rules();
+    flush_rewrite_rules( false );
+}
+register_deactivation_hook( __FILE__, 'nolantis_deactivate_plugin' );
