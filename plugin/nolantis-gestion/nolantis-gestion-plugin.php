@@ -2,6 +2,7 @@
 /**
  * Plugin Name:       Nolantis Gestion Plugin
  * Plugin URI:        https://nolantis.com
+ * Update URI:        https://github.com/GinesPalazon/nolantis-gestion-plugin/
  * Description:       Plugin de gestion para Nolantis.
  * Version:           1.0.0
  * Author:            Nolantis

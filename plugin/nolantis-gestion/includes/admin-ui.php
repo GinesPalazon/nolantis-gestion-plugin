@@ -142,6 +142,30 @@ function nolantis_render_page_header( $title ) {
     <?php
 }
 
+function nolantis_render_update_tools_card() {
+    $notice  = nolantis_get_update_check_notice();
+    $checker = nolantis_get_update_checker();
+    $update  = $checker ? $checker->getUpdate() : null;
+    ?>
+    <div class="nolantis-card">
+        <h2>Actualizaciones</h2>
+        <?php if ( $notice ) : ?>
+            <div class="<?php echo esc_attr( $notice['class'] ); ?>"><p><?php echo esc_html( $notice['message'] ); ?></p></div>
+        <?php endif; ?>
+        <?php if ( $update ) : ?>
+            <p><strong>Ultima actualizacion detectada:</strong> <?php echo esc_html( $update->version ); ?></p>
+        <?php else : ?>
+            <p><strong>Ultima actualizacion detectada:</strong> ninguna pendiente ahora mismo.</p>
+        <?php endif; ?>
+        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
+            <?php wp_nonce_field( 'nolantis_check_updates' ); ?>
+            <input type="hidden" name="action" value="nolantis_check_updates" />
+            <?php submit_button( 'Buscar actualizacion', 'secondary', 'submit', false ); ?>
+        </form>
+    </div>
+    <?php
+}
+
 function nolantis_render_limit_login_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
@@ -168,6 +192,7 @@ function nolantis_render_limit_login_page() {
                 ?>
             </p>
         </div>
+        <?php nolantis_render_update_tools_card(); ?>
     </div>
     <?php
 }

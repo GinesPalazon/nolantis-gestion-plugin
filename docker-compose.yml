@@ -14,8 +14,8 @@ services:
     volumes:
       # ⬇ Monta tu carpeta plugin/ directamente en WordPress
       - ./plugin:/var/www/html/wp-content/plugins/nolantis-gestion-plugin
-      # ⬇ Persiste WordPress completo (temas, uploads, etc.)
-      - wp_data:/var/www/html
+      # ⬇ Persiste uploads sin tapar la instalacion ni el plugin montado
+      - wp_uploads:/var/www/html/wp-content/uploads
     depends_on:
       - db
     networks:
@@ -53,5 +53,5 @@ networks:
     driver: bridge
 
 volumes:
-  wp_data:
+  wp_uploads:
   db_data:
