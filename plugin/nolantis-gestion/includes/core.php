@@ -44,6 +44,8 @@ function nolantis_get_update_check_notice() {
         return false;
     }
 
+    delete_transient( NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT );
+
     return $notice;
 }
 

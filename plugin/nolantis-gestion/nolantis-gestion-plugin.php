@@ -4,7 +4,7 @@
  * Plugin URI:        https://nolantis.com
  * Update URI:        https://github.com/GinesPalazon/nolantis-gestion-plugin/
  * Description:       Plugin de gestion para Nolantis.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Nolantis
  * Author URI:        https://nolantis.com
  * License:           GPL-2.0+

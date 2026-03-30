@@ -276,6 +276,8 @@ function nolantis_get_admin_access_notice() {
         return false;
     }
 
+    delete_transient( NOLANTIS_ADMIN_ACCESS_NOTICE_TRANSIENT );
+
     return $notice;
 }
 

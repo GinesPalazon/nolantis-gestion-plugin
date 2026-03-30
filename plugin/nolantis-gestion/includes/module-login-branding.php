@@ -25,7 +25,7 @@ function nolantis_login_branding_styles() {
         }
 
         body.login div#login h1::before {
-            content: "<?php echo esc_js( $site_name ); ?>";
+            content: <?php echo wp_json_encode( $site_name ); ?>;
             display: block;
             margin-bottom: 18px;
             color: #ffffff;

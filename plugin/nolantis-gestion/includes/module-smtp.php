@@ -5,6 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'NOLANTIS_SMTP_OPTION', 'nolantis_smtp_settings' );
+define( 'NOLANTIS_SMTP_PASSWORD_OPTION', 'nolantis_smtp_password' );
 
 function nolantis_get_default_smtp_settings() {
     return array(
@@ -13,11 +14,16 @@ function nolantis_get_default_smtp_settings() {
         'port'        => 587,
         'encryption'  => 'tls',
         'username'    => '',
-        'password'    => '',
         'from_email'  => '',
         'from_name'   => '',
         'auth'        => 1,
     );
+}
+
+function nolantis_get_smtp_password() {
+    $password = get_option( NOLANTIS_SMTP_PASSWORD_OPTION, '' );
+
+    return is_string( $password ) ? $password : '';
 }
 
 function nolantis_get_smtp_settings() {
@@ -27,8 +33,34 @@ function nolantis_get_smtp_settings() {
         $settings = array();
     }
 
-    return wp_parse_args( $settings, nolantis_get_default_smtp_settings() );
+    $settings = wp_parse_args( $settings, nolantis_get_default_smtp_settings() );
+    $settings['password'] = nolantis_get_smtp_password();
+
+    return $settings;
 }
+
+function nolantis_register_smtp_password_option() {
+    if ( false === get_option( NOLANTIS_SMTP_PASSWORD_OPTION, false ) ) {
+        add_option( NOLANTIS_SMTP_PASSWORD_OPTION, '', '', false );
+    }
+}
+add_action( 'plugins_loaded', 'nolantis_register_smtp_password_option' );
+
+function nolantis_migrate_legacy_smtp_password() {
+    $settings = get_option( NOLANTIS_SMTP_OPTION, array() );
+
+    if ( ! is_array( $settings ) || empty( $settings['password'] ) ) {
+        return;
+    }
+
+    if ( '' === nolantis_get_smtp_password() ) {
+        update_option( NOLANTIS_SMTP_PASSWORD_OPTION, (string) $settings['password'], false );
+    }
+
+    unset( $settings['password'] );
+    update_option( NOLANTIS_SMTP_OPTION, $settings, false );
+}
+add_action( 'admin_init', 'nolantis_migrate_legacy_smtp_password', 1 );
 
 function nolantis_register_smtp_settings() {
     register_setting(
@@ -159,7 +191,7 @@ function nolantis_render_from_name_field() {
 }
 
 function nolantis_sanitize_smtp_settings( $input ) {
-    $current  = nolantis_get_smtp_settings();
+    $current_password = nolantis_get_smtp_password();
     $defaults = nolantis_get_default_smtp_settings();
 
     $sanitized = array(
@@ -168,7 +200,6 @@ function nolantis_sanitize_smtp_settings( $input ) {
         'port'        => isset( $input['port'] ) ? absint( $input['port'] ) : $defaults['port'],
         'encryption'  => isset( $input['encryption'] ) ? sanitize_key( $input['encryption'] ) : $defaults['encryption'],
         'username'    => isset( $input['username'] ) ? sanitize_text_field( $input['username'] ) : '',
-        'password'    => $current['password'],
         'from_email'  => isset( $input['from_email'] ) ? sanitize_email( $input['from_email'] ) : '',
         'from_name'   => isset( $input['from_name'] ) ? sanitize_text_field( $input['from_name'] ) : '',
         'auth'        => ! empty( $input['auth'] ) ? 1 : 0,
@@ -186,7 +217,9 @@ function nolantis_sanitize_smtp_settings( $input ) {
         $raw_password = trim( (string) wp_unslash( $input['password'] ) );
 
         if ( '' !== $raw_password ) {
-            $sanitized['password'] = $raw_password;
+            update_option( NOLANTIS_SMTP_PASSWORD_OPTION, $raw_password, false );
+        } else if ( '' === $current_password ) {
+            update_option( NOLANTIS_SMTP_PASSWORD_OPTION, '', false );
         }
     }
 
@@ -207,7 +240,10 @@ function nolantis_sanitize_smtp_settings( $input ) {
         );
     }
 
-    return wp_parse_args( $sanitized, $defaults );
+    $sanitized = wp_parse_args( $sanitized, $defaults );
+    $sanitized['password'] = '';
+
+    return $sanitized;
 }
 
 function nolantis_handle_test_email() {
