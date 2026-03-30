@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NOLANTIS_VERSION', '1.0.0' );
+define( 'NOLANTIS_VERSION', '1.0.3' );
 define( 'NOLANTIS_PLUGIN_FILE', __FILE__ );
 define( 'NOLANTIS_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'NOLANTIS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );

@@ -5,6 +5,45 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT', 'nolantis_update_check_notice' );
+define( 'NOLANTIS_GITHUB_TOKEN_OPTION', 'nolantis_github_update_token' );
+
+function nolantis_register_update_token_option() {
+    if ( false === get_option( NOLANTIS_GITHUB_TOKEN_OPTION, false ) ) {
+        add_option( NOLANTIS_GITHUB_TOKEN_OPTION, '', '', false );
+    }
+}
+add_action( 'plugins_loaded', 'nolantis_register_update_token_option', 5 );
+
+function nolantis_sanitize_update_token( $value ) {
+    if ( ! is_string( $value ) ) {
+        return '';
+    }
+
+    return trim( wp_unslash( $value ) );
+}
+
+function nolantis_register_update_settings() {
+    register_setting(
+        'nolantis_update_settings_group',
+        NOLANTIS_GITHUB_TOKEN_OPTION,
+        array(
+            'type'              => 'string',
+            'sanitize_callback' => 'nolantis_sanitize_update_token',
+            'default'           => '',
+        )
+    );
+}
+add_action( 'admin_init', 'nolantis_register_update_settings' );
+
+function nolantis_get_update_token() {
+    if ( defined( 'NOLANTIS_GITHUB_UPDATE_TOKEN' ) && is_string( NOLANTIS_GITHUB_UPDATE_TOKEN ) && '' !== trim( NOLANTIS_GITHUB_UPDATE_TOKEN ) ) {
+        return trim( NOLANTIS_GITHUB_UPDATE_TOKEN );
+    }
+
+    $token = get_option( NOLANTIS_GITHUB_TOKEN_OPTION, '' );
+
+    return is_string( $token ) ? trim( $token ) : '';
+}
 
 function nolantis_get_updater_autoload_path() {
     $candidates = array(
@@ -42,6 +81,22 @@ function nolantis_load_updater() {
         'nolantis-gestion-plugin'
     );
 
+    $nolantis_update_checker->setBranch( 'main' );
+
+    $token = nolantis_get_update_token();
+
+    if ( '' !== $token ) {
+        $nolantis_update_checker->setAuthentication( $token );
+    }
+
+    if ( method_exists( $nolantis_update_checker->getVcsApi(), 'setReleaseFilter' ) ) {
+        $nolantis_update_checker->getVcsApi()->setReleaseFilter(
+            null,
+            \YahnisElsts\PluginUpdateChecker\v5p6\Vcs\Api::RELEASE_FILTER_SKIP_PRERELEASE,
+            10
+        );
+    }
+
     $nolantis_update_checker->getVcsApi()->enableReleaseAssets('/\.zip($|[?&#])/i');
 }
 add_action( 'plugins_loaded', 'nolantis_load_updater' );
@@ -77,8 +132,12 @@ function nolantis_get_update_checker_error_message( $errors ) {
     $response = isset( $first['httpResponse'] ) && is_array( $first['httpResponse'] ) ? $first['httpResponse'] : array();
     $code     = isset( $response['response']['code'] ) ? (int) $response['response']['code'] : 0;
 
-    if ( 404 === $code && false !== strpos( $url, '/releases/latest' ) ) {
-        return 'GitHub no devuelve una release publicada todavia. Para probar las actualizaciones con este sistema, crea una release publica en GitHub y adjunta el ZIP del plugin.';
+    if ( 404 === $code && ( false !== strpos( $url, '/releases/latest' ) || false !== strpos( $url, '/releases' ) ) ) {
+        if ( '' === nolantis_get_update_token() ) {
+            return 'GitHub no encuentra una release valida. Revisa que exista al menos una release publicada, que no sea borrador y que tenga el ZIP del plugin adjunto. Si el repo vuelve a ser privado, necesitaras un token.';
+        }
+
+        return 'GitHub no encuentra una release valida. Revisa que la release este publicada, que no sea borrador ni prerelease y que tenga un ZIP del plugin adjunto.';
     }
 
     if ( is_wp_error( $error ) ) {
@@ -154,6 +213,10 @@ function nolantis_handle_manual_update_check() {
     exit;
 }
 add_action( 'admin_post_nolantis_check_updates', 'nolantis_handle_manual_update_check' );
+
+function nolantis_is_update_token_defined_in_code() {
+    return defined( 'NOLANTIS_GITHUB_UPDATE_TOKEN' ) && is_string( NOLANTIS_GITHUB_UPDATE_TOKEN ) && '' !== trim( NOLANTIS_GITHUB_UPDATE_TOKEN );
+}
 
 function nolantis_get_request_ip() {
     if ( empty( $_SERVER['REMOTE_ADDR'] ) ) {

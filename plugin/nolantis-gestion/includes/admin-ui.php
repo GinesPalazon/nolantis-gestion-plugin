@@ -143,19 +143,60 @@ function nolantis_render_page_header( $title ) {
 }
 
 function nolantis_render_update_tools_card() {
-    $notice  = nolantis_get_update_check_notice();
-    $checker = nolantis_get_update_checker();
-    $update  = $checker ? $checker->getUpdate() : null;
+    $notice            = nolantis_get_update_check_notice();
+    $checker           = nolantis_get_update_checker();
+    $update            = $checker ? $checker->getUpdate() : null;
+    $token             = nolantis_get_update_token();
+    $token_defined     = nolantis_is_update_token_defined_in_code();
+    $has_saved_token   = ! $token_defined && '' !== $token;
     ?>
     <div class="nolantis-card">
         <h2>Actualizaciones</h2>
+        <?php settings_errors(); ?>
         <?php if ( $notice ) : ?>
             <div class="<?php echo esc_attr( $notice['class'] ); ?>"><p><?php echo esc_html( $notice['message'] ); ?></p></div>
         <?php endif; ?>
+        <p><strong>Repositorio:</strong> GitHub `GinesPalazon/nolantis-gestion-plugin`</p>
+        <p>
+            <strong>Autenticacion GitHub:</strong>
+            <?php
+            if ( $token_defined ) {
+                echo esc_html( 'token definido por codigo.' );
+            } elseif ( $has_saved_token ) {
+                echo esc_html( 'token guardado en WordPress.' );
+            } else {
+                echo esc_html( 'sin token. En repo publico no hace falta.' );
+            }
+            ?>
+        </p>
         <?php if ( $update ) : ?>
             <p><strong>Ultima actualizacion detectada:</strong> <?php echo esc_html( $update->version ); ?></p>
         <?php else : ?>
             <p><strong>Ultima actualizacion detectada:</strong> ninguna pendiente ahora mismo.</p>
+        <?php endif; ?>
+        <?php if ( ! $token_defined ) : ?>
+            <form action="options.php" method="post">
+                <?php settings_fields( 'nolantis_update_settings_group' ); ?>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><label for="nolantis_github_update_token">Token de GitHub</label></th>
+                        <td>
+                            <input
+                                type="password"
+                                name="<?php echo esc_attr( NOLANTIS_GITHUB_TOKEN_OPTION ); ?>"
+                                id="nolantis_github_update_token"
+                                value="<?php echo esc_attr( $token ); ?>"
+                                class="regular-text"
+                                autocomplete="new-password"
+                            />
+                            <p class="description">Opcional. Solo hace falta si el repositorio es privado. Usa un token con acceso de solo lectura al repositorio.</p>
+                        </td>
+                    </tr>
+                </table>
+                <?php submit_button( 'Guardar token', 'secondary', 'submit', false ); ?>
+            </form>
+        <?php else : ?>
+            <p class="description">El token se esta leyendo desde la constante <code>NOLANTIS_GITHUB_UPDATE_TOKEN</code>.</p>
         <?php endif; ?>
         <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
             <?php wp_nonce_field( 'nolantis_check_updates' ); ?>
