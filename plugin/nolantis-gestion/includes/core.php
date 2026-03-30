@@ -6,12 +6,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT', 'nolantis_update_check_notice' );
 
+function nolantis_get_updater_autoload_path() {
+    $candidates = array(
+        NOLANTIS_PLUGIN_PATH . 'vendor/autoload.php',
+        NOLANTIS_ROOT_PATH . 'vendor/autoload.php',
+    );
+
+    foreach ( $candidates as $candidate ) {
+        if ( file_exists( $candidate ) ) {
+            return $candidate;
+        }
+    }
+
+    return '';
+}
+
 function nolantis_load_updater() {
     global $nolantis_update_checker;
 
-    $autoload = NOLANTIS_ROOT_PATH . 'vendor/autoload.php';
+    $autoload = nolantis_get_updater_autoload_path();
 
-    if ( ! file_exists( $autoload ) ) {
+    if ( '' === $autoload ) {
         return;
     }
 
@@ -49,6 +64,30 @@ function nolantis_get_update_check_notice() {
     return $notice;
 }
 
+function nolantis_get_update_checker_error_message( $errors ) {
+    $default_message = 'La comprobacion de actualizaciones ha fallado. Revisa la conexion con GitHub o la configuracion del repositorio.';
+    $first           = reset( $errors );
+
+    if ( ! is_array( $first ) ) {
+        return $default_message;
+    }
+
+    $error    = isset( $first['error'] ) ? $first['error'] : null;
+    $url      = isset( $first['url'] ) ? (string) $first['url'] : '';
+    $response = isset( $first['httpResponse'] ) && is_array( $first['httpResponse'] ) ? $first['httpResponse'] : array();
+    $code     = isset( $response['response']['code'] ) ? (int) $response['response']['code'] : 0;
+
+    if ( 404 === $code && false !== strpos( $url, '/releases/latest' ) ) {
+        return 'GitHub no devuelve una release publicada todavia. Para probar las actualizaciones con este sistema, crea una release publica en GitHub y adjunta el ZIP del plugin.';
+    }
+
+    if ( is_wp_error( $error ) ) {
+        return $error->get_error_message();
+    }
+
+    return $default_message;
+}
+
 function nolantis_handle_manual_update_check() {
     if ( ! current_user_can( 'manage_options' ) ) {
         wp_die( 'No tienes permisos para realizar esta accion.' );
@@ -64,7 +103,7 @@ function nolantis_handle_manual_update_check() {
             NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT,
             array(
                 'class'   => 'notice notice-error',
-                'message' => 'No se pudo inicializar el comprobador de actualizaciones.',
+                'message' => 'No se pudo inicializar el comprobador de actualizaciones. Falta la libreria del actualizador en el plugin.',
             ),
             MINUTE_IN_SECONDS
         );
@@ -78,33 +117,25 @@ function nolantis_handle_manual_update_check() {
     $update = $checker->checkForUpdates();
     $errors = $checker->getLastRequestApiErrors();
 
-    if ( ! empty( $errors ) ) {
-        $message = 'La comprobacion de actualizaciones ha fallado. Revisa la conexion con GitHub o la configuracion del repositorio.';
-        $first   = reset( $errors );
-
-        if ( isset( $first['error'] ) && is_wp_error( $first['error'] ) ) {
-            $message = $first['error']->get_error_message();
-        }
-
-        set_transient(
-            NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT,
-            array(
-                'class'   => 'notice notice-error',
-                'message' => $message,
-            ),
-            MINUTE_IN_SECONDS
-        );
-
-        wp_safe_redirect( $redirect );
-        exit;
-    }
-
     if ( $update ) {
         set_transient(
             NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT,
             array(
                 'class'   => 'notice notice-success',
                 'message' => sprintf( 'Se ha encontrado una nueva version disponible: %s.', $update->version ),
+            ),
+            MINUTE_IN_SECONDS
+        );
+        wp_safe_redirect( $redirect );
+        exit;
+    }
+
+    if ( ! empty( $errors ) ) {
+        set_transient(
+            NOLANTIS_UPDATE_CHECK_NOTICE_TRANSIENT,
+            array(
+                'class'   => 'notice notice-warning',
+                'message' => nolantis_get_update_checker_error_message( $errors ),
             ),
             MINUTE_IN_SECONDS
         );
