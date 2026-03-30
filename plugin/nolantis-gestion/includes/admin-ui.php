@@ -174,6 +174,7 @@ function nolantis_render_update_tools_card() {
         <?php else : ?>
             <p><strong>Ultima actualizacion detectada:</strong> ninguna pendiente ahora mismo.</p>
         <?php endif; ?>
+        <p><strong>Canal de actualizacion:</strong> GitHub Releases publico activo.</p>
         <?php if ( ! $token_defined ) : ?>
             <form action="options.php" method="post">
                 <?php settings_fields( 'nolantis_update_settings_group' ); ?>

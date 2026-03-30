@@ -4,7 +4,7 @@
  * Plugin URI:        https://nolantis.com
  * Update URI:        https://github.com/GinesPalazon/nolantis-gestion-plugin/
  * Description:       Plugin de gestion para Nolantis.
- * Version:           1.0.3
+ * Version:           1.0.4
  * Author:            Nolantis
  * Author URI:        https://nolantis.com
  * License:           GPL-2.0+
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NOLANTIS_VERSION', '1.0.3' );
+define( 'NOLANTIS_VERSION', '1.0.4' );
 define( 'NOLANTIS_PLUGIN_FILE', __FILE__ );
 define( 'NOLANTIS_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'NOLANTIS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
