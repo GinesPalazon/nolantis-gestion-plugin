@@ -221,6 +221,31 @@ function nolantis_is_update_token_defined_in_code() {
     return defined( 'NOLANTIS_GITHUB_UPDATE_TOKEN' ) && is_string( NOLANTIS_GITHUB_UPDATE_TOKEN ) && '' !== trim( NOLANTIS_GITHUB_UPDATE_TOKEN );
 }
 
+function nolantis_fix_update_package_directory( $source, $remote_source, $upgrader, $hook_extra = array() ) {
+    if ( empty( $hook_extra['plugin'] ) || NOLANTIS_PLUGIN_BASENAME !== $hook_extra['plugin'] ) {
+        return $source;
+    }
+
+    $expected_directory = dirname( NOLANTIS_PLUGIN_BASENAME );
+
+    if ( '.' === $expected_directory || '' === $expected_directory || basename( $source ) === $expected_directory ) {
+        return $source;
+    }
+
+    $target = trailingslashit( $remote_source ) . $expected_directory;
+
+    if ( file_exists( $target ) ) {
+        return $source;
+    }
+
+    if ( @rename( $source, $target ) ) {
+        return $target;
+    }
+
+    return $source;
+}
+add_filter( 'upgrader_source_selection', 'nolantis_fix_update_package_directory', 10, 4 );
+
 function nolantis_get_request_ip() {
     if ( empty( $_SERVER['REMOTE_ADDR'] ) ) {
         return '';
