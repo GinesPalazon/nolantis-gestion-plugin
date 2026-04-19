@@ -9,40 +9,17 @@ define( 'NOLANTIS_SMTP_PASSWORD_OPTION', 'nolantis_smtp_password' );
 define( 'NOLANTIS_SMTP_WIZARD_OPTION', 'nolantis_smtp_wizard_status' );
 define( 'NOLANTIS_SMTP_PASSWORD_PREFIX', 'nolantis_enc_v1:' );
 
-function nolantis_get_default_smtp_password() {
-    $encoded = 'RXUuV2JzTm9hLlVFLzg5QDI0Nw==';
-    $decoded = base64_decode( $encoded, true );
-
-    return is_string( $decoded ) ? $decoded : '';
-}
-
-function nolantis_get_nolantis_smtp_defaults() {
+function nolantis_get_default_smtp_settings() {
     return array(
-        'host'             => 'smtp.ionos.es',
+        'enabled'          => 0,
+        'host'             => '',
         'port'             => 587,
         'encryption'       => 'tls',
-        'username'         => 'web@nolantis.es',
-        'password'         => nolantis_get_default_smtp_password(),
-        'from_email'       => 'web@nolantis.es',
+        'username'         => '',
+        'from_email'       => '',
         'from_name'        => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
         'auth'             => 1,
         'force_from_email' => 1,
-    );
-}
-
-function nolantis_get_default_smtp_settings() {
-    $nolantis_defaults = nolantis_get_nolantis_smtp_defaults();
-
-    return array(
-        'enabled'          => 1,
-        'host'             => $nolantis_defaults['host'],
-        'port'             => $nolantis_defaults['port'],
-        'encryption'       => $nolantis_defaults['encryption'],
-        'username'         => $nolantis_defaults['username'],
-        'from_email'       => $nolantis_defaults['from_email'],
-        'from_name'        => $nolantis_defaults['from_name'],
-        'auth'             => $nolantis_defaults['auth'],
-        'force_from_email' => $nolantis_defaults['force_from_email'],
     );
 }
 
@@ -70,12 +47,12 @@ function nolantis_complete_smtp_wizard( $status ) {
 }
 
 function nolantis_apply_default_smtp_settings() {
-    $defaults = nolantis_get_nolantis_smtp_defaults();
+    $defaults = nolantis_get_default_smtp_settings();
 
     update_option(
         NOLANTIS_SMTP_OPTION,
         array(
-            'enabled'          => 1,
+            'enabled'          => $defaults['enabled'],
             'host'             => $defaults['host'],
             'port'             => $defaults['port'],
             'encryption'       => $defaults['encryption'],
@@ -88,7 +65,7 @@ function nolantis_apply_default_smtp_settings() {
         false
     );
 
-    nolantis_update_smtp_password( $defaults['password'] );
+    update_option( NOLANTIS_SMTP_PASSWORD_OPTION, '', false );
 }
 
 function nolantis_get_smtp_encryption_key() {
@@ -334,7 +311,7 @@ function nolantis_render_password_field() {
 }
 
 function nolantis_render_from_email_field() {
-    nolantis_render_text_field( 'from_email', 'email', 'web@nolantis.es' );
+    nolantis_render_text_field( 'from_email', 'email', 'no-reply@tudominio.com' );
 }
 
 function nolantis_render_force_from_email_field() {
