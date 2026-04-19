@@ -6,13 +6,20 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 plugin_file="${root_dir}/plugin/${plugin_slug}/${plugin_slug}-plugin.php"
 
 version="${1:-}"
+plugin_version="$(grep -E '^[[:space:]]*\* Version:' "${plugin_file}" | sed -E 's/.*Version:[[:space:]]*//')"
 
 if [[ -z "${version}" ]]; then
-    version="$(grep -E '^[[:space:]]*\* Version:' "${plugin_file}" | sed -E 's/.*Version:[[:space:]]*//')"
+    version="${plugin_version}"
 fi
 
 if [[ -z "${version}" ]]; then
     echo "No se ha podido detectar la version del plugin." >&2
+    exit 1
+fi
+
+if [[ "${version}" != "${plugin_version}" ]]; then
+    echo "La version del tag/release (${version}) no coincide con la version declarada en el plugin (${plugin_version})." >&2
+    echo "Actualiza el header Version y NOLANTIS_VERSION antes de publicar la release." >&2
     exit 1
 fi
 

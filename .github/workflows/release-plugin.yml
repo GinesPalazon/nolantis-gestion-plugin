@@ -1,9 +1,16 @@
 name: Build plugin release ZIP
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to rebuild, for example v1.0.5
+        required: true
+        type: string
   release:
     types:
       - published
+      - edited
 
 permissions:
   contents: write
@@ -23,11 +30,13 @@ jobs:
       - name: Build plugin ZIP
         id: build_zip
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          release_tag="${{ github.event.inputs.release_tag || github.event.release.tag_name }}"
+          version="${release_tag#v}"
           zip_path="$(bash scripts/build-release.sh "${version}")"
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
           echo "zip_path=${zip_path}" >> "${GITHUB_OUTPUT}"
 
       - name: Attach ZIP to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${GITHUB_REF_NAME}" "${{ steps.build_zip.outputs.zip_path }}" --clobber
+        run: gh release upload "${{ steps.build_zip.outputs.release_tag }}" "${{ steps.build_zip.outputs.zip_path }}" --clobber
