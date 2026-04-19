@@ -79,6 +79,13 @@ function nolantis_admin_assets() {
         .nolantis-card p {
             margin-top: 0;
         }
+
+        .nolantis-wizard-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
     </style>
     <?php if ( file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ) : ?>
     <script>
@@ -208,6 +215,41 @@ function nolantis_render_update_tools_card() {
     <?php
 }
 
+function nolantis_render_smtp_wizard_notice() {
+    $result = isset( $_GET['nolantis_smtp_wizard'] ) ? sanitize_key( wp_unslash( $_GET['nolantis_smtp_wizard'] ) ) : '';
+
+    if ( 'default_applied' === $result ) {
+        echo '<div class="notice notice-success"><p>Se han aplicado los ajustes SMTP por defecto de Nolantis.</p></div>';
+    } elseif ( 'custom' === $result ) {
+        echo '<div class="notice notice-info"><p>Ayuda asistida completada. Puedes configurar tus propios ajustes SMTP en el formulario.</p></div>';
+    } elseif ( 'skipped' === $result ) {
+        echo '<div class="notice notice-info"><p>Ayuda asistida omitida. Puedes configurar SMTP manualmente cuando quieras.</p></div>';
+    }
+}
+
+function nolantis_render_smtp_wizard_card() {
+    if ( ! nolantis_should_show_smtp_wizard() ) {
+        return;
+    }
+
+    ?>
+    <div class="nolantis-card">
+        <h2>Ayuda asistida SMTP</h2>
+        <p>Podemos dejar configurado el envio de correos con los ajustes SMTP por defecto de Nolantis o puedes introducir los datos propios de esta web.</p>
+        <p><strong>Ajustes Nolantis:</strong> servidor <code>smtp.ionos.es</code>, puerto <code>587</code>, cifrado <code>TLS</code> y usuario <code>web@nolantis.es</code>.</p>
+        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
+            <?php wp_nonce_field( 'nolantis_smtp_wizard' ); ?>
+            <input type="hidden" name="action" value="nolantis_smtp_wizard" />
+            <div class="nolantis-wizard-actions">
+                <button type="submit" class="button button-primary" name="nolantis_smtp_wizard_choice" value="default">Usar ajustes Nolantis</button>
+                <button type="submit" class="button" name="nolantis_smtp_wizard_choice" value="custom">Usar mis propios ajustes</button>
+                <button type="submit" class="button-link" name="nolantis_smtp_wizard_choice" value="skip">Saltar ayuda asistida</button>
+            </div>
+        </form>
+    </div>
+    <?php
+}
+
 function nolantis_render_limit_login_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return;
@@ -249,7 +291,9 @@ function nolantis_render_smtp_page() {
     <div class="wrap">
         <?php nolantis_render_page_header( 'SMTP' ); ?>
         <?php settings_errors( NOLANTIS_SMTP_OPTION ); ?>
+        <?php nolantis_render_smtp_wizard_notice(); ?>
         <?php nolantis_render_test_mail_notice(); ?>
+        <?php nolantis_render_smtp_wizard_card(); ?>
         <form action="options.php" method="post">
             <?php
             settings_fields( 'nolantis_settings_group' );
