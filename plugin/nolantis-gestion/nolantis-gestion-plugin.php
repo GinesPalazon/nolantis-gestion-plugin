@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Nolantis Gestion Plugin
+ * Plugin Name:       All in One Wordpress By Nolantis
  * Plugin URI:        https://nolantis.com
  * Update URI:        https://github.com/GinesPalazon/nolantis-gestion-plugin/
  * Description:       Plugin de gestion para Nolantis.
