@@ -97,7 +97,10 @@ function nolantis_load_updater() {
         );
     }
 
-    $nolantis_update_checker->getVcsApi()->enableReleaseAssets('/\.zip($|[?&#])/i');
+    $nolantis_update_checker->getVcsApi()->enableReleaseAssets(
+        '/^nolantis-gestion-[0-9][0-9a-zA-Z._-]*\.zip$/i',
+        \YahnisElsts\PluginUpdateChecker\v5p6\Vcs\Api::REQUIRE_RELEASE_ASSETS
+    );
 }
 add_action( 'plugins_loaded', 'nolantis_load_updater' );
 
