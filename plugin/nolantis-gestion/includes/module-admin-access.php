@@ -99,10 +99,14 @@ function nolantis_render_admin_access_slug_field() {
 }
 
 function nolantis_sanitize_admin_access_settings( $input ) {
+    if ( ! is_array( $input ) ) {
+        $input = array();
+    }
+
     $defaults  = nolantis_get_default_admin_access_settings();
     $sanitized = array(
         'enabled' => ! empty( $input['enabled'] ) ? 1 : 0,
-        'slug'    => isset( $input['slug'] ) ? sanitize_title( wp_unslash( $input['slug'] ) ) : '',
+        'slug'    => isset( $input['slug'] ) ? substr( sanitize_title( wp_unslash( $input['slug'] ) ), 0, 80 ) : '',
     );
 
     if ( $sanitized['enabled'] && empty( $sanitized['slug'] ) ) {
@@ -114,7 +118,20 @@ function nolantis_sanitize_admin_access_settings( $input ) {
         $sanitized['enabled'] = 0;
     }
 
-    if ( in_array( $sanitized['slug'], array( 'wp-admin', 'wp-login', 'wp-login-php', 'login' ), true ) ) {
+    $reserved_slugs = array(
+        'admin',
+        'login',
+        'wp-admin',
+        'wp-content',
+        'wp-includes',
+        'wp-json',
+        'wp-login',
+        'wp-login-php',
+        'xmlrpc',
+        'xmlrpc-php',
+    );
+
+    if ( in_array( $sanitized['slug'], $reserved_slugs, true ) ) {
         add_settings_error(
             NOLANTIS_ADMIN_ACCESS_OPTION,
             'nolantis_admin_access_reserved_slug',
@@ -150,15 +167,11 @@ function nolantis_get_custom_login_url() {
 }
 
 function nolantis_is_custom_login_request() {
-    if ( isset( $_GET['nolantis_admin_access'] ) && '1' === (string) wp_unslash( $_GET['nolantis_admin_access'] ) ) {
-        return true;
-    }
-
     if ( ! nolantis_is_admin_access_enabled() ) {
         return false;
     }
 
-    return nolantis_get_current_request_path() === nolantis_get_custom_login_slug();
+    return hash_equals( nolantis_get_custom_login_slug(), nolantis_get_current_request_path() );
 }
 
 function nolantis_filter_login_url( $login_url, $redirect, $force_reauth ) {
@@ -284,6 +297,7 @@ function nolantis_get_admin_access_notice() {
 function nolantis_render_hidden_admin_access_response() {
     status_header( 404 );
     nocache_headers();
+    header( 'X-Robots-Tag: noindex, nofollow', true );
     wp_die( '404', '404', array( 'response' => 404 ) );
 }
 

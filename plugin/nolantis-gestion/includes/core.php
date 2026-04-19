@@ -198,7 +198,9 @@ function nolantis_get_request_ip() {
         return '';
     }
 
-    return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+    $ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
+    return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
 }
 
 function nolantis_get_current_request_path() {
@@ -210,5 +212,5 @@ function nolantis_get_current_request_path() {
         $request_path = substr( $request_path, strlen( $site_path ) );
     }
 
-    return trim( $request_path, '/' );
+    return trim( sanitize_text_field( $request_path ), '/' );
 }

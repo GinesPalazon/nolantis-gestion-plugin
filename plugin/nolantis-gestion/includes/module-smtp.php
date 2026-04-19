@@ -330,10 +330,16 @@ function nolantis_sanitize_smtp_settings( $input ) {
     $current_password = nolantis_get_smtp_password();
     $defaults = nolantis_get_default_smtp_settings();
 
+    $port = isset( $input['port'] ) ? absint( $input['port'] ) : $defaults['port'];
+
+    if ( $port < 1 || $port > 65535 ) {
+        $port = $defaults['port'];
+    }
+
     $sanitized = array(
         'enabled'          => ! empty( $input['enabled'] ) ? 1 : 0,
         'host'             => isset( $input['host'] ) ? sanitize_text_field( $input['host'] ) : '',
-        'port'             => isset( $input['port'] ) ? absint( $input['port'] ) : $defaults['port'],
+        'port'             => $port,
         'encryption'       => isset( $input['encryption'] ) ? sanitize_key( $input['encryption'] ) : $defaults['encryption'],
         'username'         => isset( $input['username'] ) ? sanitize_text_field( $input['username'] ) : '',
         'from_email'       => isset( $input['from_email'] ) ? sanitize_email( $input['from_email'] ) : '',
@@ -344,10 +350,6 @@ function nolantis_sanitize_smtp_settings( $input ) {
 
     if ( ! in_array( $sanitized['encryption'], array( 'none', 'ssl', 'tls' ), true ) ) {
         $sanitized['encryption'] = $defaults['encryption'];
-    }
-
-    if ( empty( $sanitized['port'] ) ) {
-        $sanitized['port'] = $defaults['port'];
     }
 
     if ( isset( $input['password'] ) ) {
@@ -375,6 +377,7 @@ function nolantis_sanitize_smtp_settings( $input ) {
             'nolantis_missing_host',
             'Debes indicar el servidor SMTP para activar el envio.'
         );
+        $sanitized['enabled'] = 0;
     }
 
     $sanitized = wp_parse_args( $sanitized, $defaults );

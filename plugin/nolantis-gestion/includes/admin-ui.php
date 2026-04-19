@@ -43,6 +43,15 @@ function nolantis_register_admin_menu() {
         'nolantis-admin-access',
         'nolantis_render_admin_access_page'
     );
+
+    add_submenu_page(
+        'nolantis-limit-login',
+        'Ajustes generales',
+        'Ajustes generales',
+        'manage_options',
+        'nolantis-general-settings',
+        'nolantis_render_general_settings_page'
+    );
 }
 add_action( 'admin_menu', 'nolantis_register_admin_menu' );
 
@@ -218,7 +227,8 @@ function nolantis_render_limit_login_page() {
 
     $ip       = nolantis_get_request_ip();
     $lock     = nolantis_get_limit_login_lock( $ip );
-    $attempts = $ip ? (int) get_transient( nolantis_get_limit_login_attempts_key( $ip ) ) : 0;
+    $attempts = nolantis_get_limit_login_attempts( $ip );
+    $remaining = nolantis_get_limit_login_remaining_attempts( $ip );
     ?>
     <div class="wrap">
         <?php nolantis_render_page_header( 'Limit Login' ); ?>
@@ -227,6 +237,7 @@ function nolantis_render_limit_login_page() {
             <p><strong>Reglas activas:</strong> 3 errores bloquean 24 horas. Si la misma IP vuelve a acumular 3 errores dentro de la ventana de reincidencia, el bloqueo pasa a 7 dias. Al terminar ese bloqueo largo, el estado se limpia automaticamente.</p>
             <p><strong>Tu IP detectada:</strong> <?php echo esc_html( $ip ? $ip : 'No disponible' ); ?></p>
             <p><strong>Intentos fallidos actuales para esta IP:</strong> <?php echo esc_html( (string) $attempts ); ?></p>
+            <p><strong>Intentos restantes antes del bloqueo:</strong> <?php echo esc_html( (string) $remaining ); ?></p>
             <p><strong>Estado actual:</strong>
                 <?php
                 if ( $lock ) {
@@ -323,6 +334,29 @@ function nolantis_render_admin_access_page() {
             <?php else : ?>
                 <p><strong>Ruta activa:</strong> desactivada. WordPress sigue usando sus rutas por defecto.</p>
             <?php endif; ?>
+        </div>
+    </div>
+    <?php
+}
+
+function nolantis_render_general_settings_page() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    ?>
+    <div class="wrap">
+        <?php nolantis_render_page_header( 'Ajustes generales' ); ?>
+        <?php settings_errors( NOLANTIS_GENERAL_OPTION ); ?>
+        <form action="options.php" method="post">
+            <?php
+            settings_fields( 'nolantis_general_settings_group' );
+            do_settings_sections( 'nolantis-general-settings' );
+            submit_button( 'Guardar ajustes' );
+            ?>
+        </form>
+        <div class="nolantis-card">
+            <p>Estos ajustes aplican cambios globales de comportamiento en WordPress. Antes de activar una opcion, revisa si la web necesita mantener compatibilidad con comentarios, formularios o integraciones de terceros.</p>
         </div>
     </div>
     <?php

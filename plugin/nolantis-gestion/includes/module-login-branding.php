@@ -4,9 +4,26 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+function nolantis_get_site_logo_url() {
+    $custom_logo_id = function_exists( 'get_theme_mod' ) ? (int) get_theme_mod( 'custom_logo' ) : 0;
+
+    if ( $custom_logo_id ) {
+        $logo_url = wp_get_attachment_image_url( $custom_logo_id, 'full' );
+
+        if ( $logo_url ) {
+            return $logo_url;
+        }
+    }
+
+    $site_icon_url = function_exists( 'get_site_icon_url' ) ? get_site_icon_url( 192 ) : '';
+
+    return is_string( $site_icon_url ) ? $site_icon_url : '';
+}
+
 function nolantis_login_branding_styles() {
-    $logo_url  = file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ? NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL : '';
-    $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    $site_logo_url     = nolantis_get_site_logo_url();
+    $nolantis_logo_url = file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ? NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL : '';
+    $site_name         = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     ?>
     <style>
         body.login {
@@ -39,10 +56,11 @@ function nolantis_login_branding_styles() {
             width: 220px;
             height: 92px;
             margin: 0 auto;
-            background-image: url('<?php echo esc_url_raw( $logo_url ); ?>');
+            background-image: <?php echo $site_logo_url ? "url('" . esc_url_raw( $site_logo_url ) . "')" : 'none'; ?>;
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
+            pointer-events: <?php echo $site_logo_url ? 'auto' : 'none'; ?>;
         }
 
         body.login #loginform,
@@ -109,6 +127,10 @@ function nolantis_login_branding_styles() {
         }
 
         .nolantis-login-credit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             margin-top: 18px;
             text-align: center;
             color: #ffffff;
@@ -121,7 +143,18 @@ function nolantis_login_branding_styles() {
             font-weight: 700;
             text-decoration: underline;
         }
+
+        .nolantis-login-credit img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
     </style>
+    <?php if ( $nolantis_logo_url ) : ?>
+        <script>
+            window.nolantisLoginLogoUrl = '<?php echo esc_js( $nolantis_logo_url ); ?>';
+        </script>
+    <?php endif; ?>
     <?php
 }
 add_action( 'login_enqueue_scripts', 'nolantis_login_branding_styles' );
@@ -137,6 +170,14 @@ function nolantis_login_header_text() {
 add_filter( 'login_headertext', 'nolantis_login_header_text' );
 
 function nolantis_login_footer_credit() {
-    echo '<p class="nolantis-login-credit">Web Gestionada por <a href="https://nolantis.com" target="_blank" rel="noreferrer">Nolantis</a></p>';
+    $logo_url = file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ? NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL : '';
+    ?>
+    <p class="nolantis-login-credit">
+        <?php if ( $logo_url ) : ?>
+            <img src="<?php echo esc_url( $logo_url ); ?>" alt="Nolantis" />
+        <?php endif; ?>
+        <span>Web Gestionada por <a href="https://nolantis.com" target="_blank" rel="noreferrer">Nolantis</a></span>
+    </p>
+    <?php
 }
 add_action( 'login_footer', 'nolantis_login_footer_credit' );
