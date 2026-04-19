@@ -137,6 +137,6 @@ function nolantis_login_header_text() {
 add_filter( 'login_headertext', 'nolantis_login_header_text' );
 
 function nolantis_login_footer_credit() {
-    echo '<p class="nolantis-login-credit">Web Gestionada por Nolantis, <a href="https://nolantis.com" target="_blank" rel="noreferrer">Empresa de Diseno Web</a></p>';
+    echo '<p class="nolantis-login-credit">Web Gestionada por <a href="https://nolantis.com" target="_blank" rel="noreferrer">Nolantis</a></p>';
 }
 add_action( 'login_footer', 'nolantis_login_footer_credit' );

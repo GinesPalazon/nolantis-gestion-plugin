@@ -40,6 +40,12 @@ function nolantis_get_update_token() {
         return trim( NOLANTIS_GITHUB_UPDATE_TOKEN );
     }
 
+    $env_token = getenv( 'NOLANTIS_GITHUB_UPDATE_TOKEN' );
+
+    if ( is_string( $env_token ) && '' !== trim( $env_token ) ) {
+        return trim( $env_token );
+    }
+
     $token = get_option( NOLANTIS_GITHUB_TOKEN_OPTION, '' );
 
     return is_string( $token ) ? trim( $token ) : '';
@@ -103,6 +109,28 @@ function nolantis_load_updater() {
     );
 }
 add_action( 'plugins_loaded', 'nolantis_load_updater' );
+
+function nolantis_authorize_github_update_downloads( $request_args, $url ) {
+    $token = nolantis_get_update_token();
+
+    if ( '' === $token || false === strpos( $url, 'https://api.github.com/repos/GinesPalazon/nolantis-gestion-plugin/' ) ) {
+        return $request_args;
+    }
+
+    if ( ! isset( $request_args['headers'] ) || ! is_array( $request_args['headers'] ) ) {
+        $request_args['headers'] = array();
+    }
+
+    $request_args['headers']['Authorization']        = 'Bearer ' . $token;
+    $request_args['headers']['X-GitHub-Api-Version'] = '2022-11-28';
+
+    if ( false !== strpos( $url, '/releases/assets/' ) ) {
+        $request_args['headers']['Accept'] = 'application/octet-stream';
+    }
+
+    return $request_args;
+}
+add_filter( 'http_request_args', 'nolantis_authorize_github_update_downloads', 20, 2 );
 
 function nolantis_get_update_checker() {
     global $nolantis_update_checker;

@@ -4,7 +4,7 @@
  * Plugin URI:        https://nolantis.com
  * Update URI:        https://github.com/GinesPalazon/nolantis-gestion-plugin/
  * Description:       Plugin de gestion para Nolantis.
- * Version:           1.0.7
+ * Version:           1.0.10
  * Author:            Nolantis
  * Author URI:        https://nolantis.com
  * License:           GPL-2.0+
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NOLANTIS_VERSION', '1.0.7' );
+define( 'NOLANTIS_VERSION', '1.0.10' );
 define( 'NOLANTIS_PLUGIN_FILE', __FILE__ );
 define( 'NOLANTIS_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'NOLANTIS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -40,6 +40,7 @@ function nolantis_activate_plugin() {
         add_option( NOLANTIS_SMTP_WIZARD_OPTION, 'pending', '', false );
     }
 
+    nolantis_seed_default_smtp_settings();
     nolantis_register_admin_access_settings();
     nolantis_sync_admin_access_htaccess();
     flush_rewrite_rules( false );
