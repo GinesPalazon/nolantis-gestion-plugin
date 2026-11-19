@@ -29,7 +29,7 @@ has "primera visita tras actualizar: la ruta muestra el formulario" "$("${C[@]}"
 HT=$(docker exec nolantis-gestion-wp cat /var/www/html/.htaccess)
 if (( $(grep -n "^# BEGIN Nolantis" <<<"$HT" | cut -d: -f1) < $(grep -n "^# BEGIN WordPress" <<<"$HT" | cut -d: -f1) )); then ok "  ...y la regla se ha movido delante de la de WordPress"; else ko "orden tras actualizar" "$HT"; fi
 has "  ...con el formato nuevo" "$HT" "RewriteRule ^$SLUG/?\$ wp-login.php [QSA,L]"
-check "  ...versión registrada" "$(WPHP "echo get_option( 'nolantis_plugin_version' );")" "2.0.0"
+check "  ...versión registrada" "$(WPHP "echo get_option( 'nolantis_plugin_version' );")" "$(WPHP 'echo NOLANTIS_VERSION;')"
 check "/wp-login.php sigue oculto" "$("${C[@]}" -o /dev/null -w '%{http_code}' http://localhost/wp-login.php)" 404
 check "/login no revela la ruta" "$("${C[@]}" -o /dev/null -w '%{http_code}' http://localhost/login)" 404
 perma ''

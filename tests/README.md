@@ -35,6 +35,7 @@ pruebas (`fake-smtp.php`) **solo dentro del contenedor**, y los quitan después.
 | `ll-smtp-tests.sh` | SMTP real contra el servidor de pruebas: envíos, errores explicados, registro, panel; comentarios |
 | `ll-hardening-tests.sh` | Endurecimiento: cabeceras, versiones, editor de archivos, PHP en uploads |
 | `ll-integrity-cf-tests.sh` | Rangos de Cloudflare actualizados y comprobación de integridad (simula un hackeo y lo restaura) |
+| `ll-caps-tests.php` | Tope de filas del registro de intentos y del historial de bloqueos |
 | `ll-autoupdate-tests.php` | Actualización automática segura (sin instalar nada) |
 | `ll-upgrade-uninstall-tests.sh` | Actualización desde la 1.0.17 (ruta oculta mal colocada) y desinstalación completa (sin borrar la carpeta del plugin; restaura los ajustes) |
 

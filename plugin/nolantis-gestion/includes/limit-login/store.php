@@ -17,6 +17,12 @@ define( 'NOLANTIS_LL_DB_VERSION', '2' );
 define( 'NOLANTIS_LL_DB_VERSION_OPTION', 'nolantis_ll_db_version' );
 define( 'NOLANTIS_LL_PURGE_HOOK', 'nolantis_ll_daily_purge' );
 
+// Tope de filas: ante un ataque enorme las tablas no crecen sin limite entre limpiezas diarias.
+define( 'NOLANTIS_LL_LOG_MAX_ROWS', 100000 );
+define( 'NOLANTIS_LL_LOCKOUTS_MAX_ROWS', 50000 );
+define( 'NOLANTIS_LL_TRIM_BATCH', 10000 );
+define( 'NOLANTIS_LL_TRIM_EVERY', 500 );
+
 function nolantis_ll_log_table() {
     global $wpdb;
 
@@ -130,8 +136,38 @@ function nolantis_ll_purge_old_records() {
 
     $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . nolantis_ll_log_table() . ' WHERE created_at < %d', $cutoff ) );
     $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . nolantis_ll_lockouts_table() . ' WHERE locked_until < %d', $cutoff ) );
+
+    nolantis_ll_enforce_row_caps();
 }
 add_action( NOLANTIS_LL_PURGE_HOOK, 'nolantis_ll_purge_old_records' );
+
+/**
+ * Mantiene las tablas por debajo de su tope borrando lo mas antiguo:
+ * - registro de intentos: solo se conservan las filas mas recientes;
+ * - historial de bloqueos: solo se recortan bloqueos ya terminados (los activos nunca se tocan).
+ * Borra en tandas para no bloquear la tabla mucho tiempo.
+ */
+function nolantis_ll_enforce_row_caps() {
+    global $wpdb;
+
+    $log_max      = max( 1000, (int) apply_filters( 'nolantis_ll_log_max_rows', NOLANTIS_LL_LOG_MAX_ROWS ) );
+    $lockouts_max = max( 1000, (int) apply_filters( 'nolantis_ll_lockouts_max_rows', NOLANTIS_LL_LOCKOUTS_MAX_ROWS ) );
+    $log          = nolantis_ll_log_table();
+    $lockouts     = nolantis_ll_lockouts_table();
+    $now          = time();
+
+    $cutoff = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$log} ORDER BY id DESC LIMIT 1 OFFSET %d", $log_max ) );
+
+    if ( $cutoff > 0 ) {
+        $wpdb->query( $wpdb->prepare( "DELETE FROM {$log} WHERE id <= %d ORDER BY id LIMIT %d", $cutoff, NOLANTIS_LL_TRIM_BATCH ) );
+    }
+
+    $cutoff = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$lockouts} WHERE locked_until < %d ORDER BY id DESC LIMIT 1 OFFSET %d", $now, $lockouts_max ) );
+
+    if ( $cutoff > 0 ) {
+        $wpdb->query( $wpdb->prepare( "DELETE FROM {$lockouts} WHERE id <= %d AND locked_until < %d ORDER BY id LIMIT %d", $cutoff, $now, NOLANTIS_LL_TRIM_BATCH ) );
+    }
+}
 
 /* -------------------------------------------------------------------------
  * Registro
@@ -162,6 +198,11 @@ function nolantis_ll_log_event( $ip, $event, $username = '', $source = 'login' )
         ),
         array( '%d', '%s', '%s', '%s', '%s' )
     );
+
+    // Durante un ataque se aplica el tope de vez en cuando, sin esperar a la limpieza diaria.
+    if ( 1 === wp_rand( 1, NOLANTIS_LL_TRIM_EVERY ) ) {
+        nolantis_ll_enforce_row_caps();
+    }
 }
 
 function nolantis_ll_clean_username( $username ) {

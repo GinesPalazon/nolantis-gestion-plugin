@@ -211,8 +211,9 @@ OUT=$(WPHP "
 echo 'CHECKER=', ( \$c ? 'si' : 'no' ), '|REMOTA=', ( \$u ? \$u->version : '-' ), '|ZIP=', ( \$u ? \$u->download_url : '-' ), '|ERRORES=', count( \$c ? \$c->getLastRequestApiErrors() : array( 1 ) );
 ")
 has "el comprobador se inicializa" "$OUT" "CHECKER=si"
-has "lee la última release de GitHub" "$OUT" "REMOTA=1.0.17"
-has "  ...con el ZIP adjunto" "$OUT" "nolantis-gestion-1.0.17.zip"
+LATEST=$(gh release view -R GinesPalazon/nolantis-gestion-plugin --json tagName --jq .tagName 2>/dev/null | sed 's/^v//')
+has "lee la última release de GitHub ($LATEST)" "$OUT" "REMOTA=$LATEST|"
+has "  ...con el ZIP adjunto" "$OUT" "nolantis-gestion-$LATEST.zip"
 has "  ...sin errores" "$OUT" "ERRORES=0"
 
 echo "== Limpieza"

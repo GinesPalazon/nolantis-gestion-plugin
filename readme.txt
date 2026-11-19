@@ -4,7 +4,7 @@ Tags: seguridad, login, smtp, fuerza bruta, mantenimiento
 Requires at least: 5.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 
 Gestión y seguridad para las webs gestionadas por Nolantis.
@@ -19,6 +19,9 @@ Gestión y seguridad para las webs gestionadas por Nolantis.
 * Cierre de comentarios y pantalla de acceso personalizada.
 
 == Changelog ==
+
+= 2.0.1 =
+* Tope de tamaño para el registro de intentos de acceso (100.000 filas) y el historial de bloqueos (50.000): ante ataques enormes las tablas ya no crecen sin límite entre limpiezas diarias. Los bloqueos activos nunca se borran.
 
 = 2.0.0 =
 * Nuevo nombre: WP-Gestion-integral Nolantis. Menú del panel: WP-Nolantis.

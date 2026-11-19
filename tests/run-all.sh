@@ -26,6 +26,8 @@ run "SMTP y comentarios"                    ll-smtp-tests.sh
 run "Endurecimiento"                        ll-hardening-tests.sh
 run "Cloudflare e integridad"               ll-integrity-cf-tests.sh
 run "Actualizacion desde 1.0.17 y desinstalacion" ll-upgrade-uninstall-tests.sh
+echo "### Tope de filas"
+docker exec -i -u www-data nolantis-gestion-wp php /dev/stdin < "$T/ll-caps-tests.php" 2>&1 | grep -E "FALLO|RESULTADO"
 echo "### Actualizacion segura"
 docker exec -i -u www-data nolantis-gestion-wp php /dev/stdin < "$T/ll-autoupdate-tests.php" 2>&1 | grep -E "FALLO|RESULTADO"
 
