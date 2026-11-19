@@ -5,11 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function nolantis_register_admin_menu() {
-    $menu_icon = file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ? NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL : 'dashicons-shield';
+    $menu_icon = file_exists( NOLANTIS_PLUGIN_ICON_PATH ) ? NOLANTIS_PLUGIN_ICON_URL : 'dashicons-shield';
 
     add_menu_page(
-        'Nolantis',
-        'Nolantis',
+        'WP-Nolantis',
+        'WP-Nolantis',
         'manage_options',
         'nolantis-limit-login',
         'nolantis_render_limit_login_page',
@@ -19,8 +19,8 @@ function nolantis_register_admin_menu() {
 
     add_submenu_page(
         'nolantis-limit-login',
-        'Limit Login',
-        'Limit Login',
+        'Seguridad de acceso',
+        'Seguridad de acceso',
         'manage_options',
         'nolantis-limit-login',
         'nolantis_render_limit_login_page'
@@ -51,6 +51,15 @@ function nolantis_register_admin_menu() {
         'manage_options',
         'nolantis-general-settings',
         'nolantis_render_general_settings_page'
+    );
+
+    add_submenu_page(
+        'nolantis-limit-login',
+        'Endurecimiento',
+        'Endurecimiento',
+        'manage_options',
+        'nolantis-hardening',
+        'nolantis_render_hardening_page'
     );
 }
 add_action( 'admin_menu', 'nolantis_register_admin_menu' );
@@ -89,28 +98,7 @@ function nolantis_admin_assets() {
             margin-top: 0;
         }
 
-        .nolantis-wizard-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 16px;
-        }
     </style>
-    <?php if ( file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ) : ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var menuItem = document.getElementById('toplevel_page_nolantis-limit-login');
-            var menuIcon = menuItem ? menuItem.querySelector('.wp-menu-image img') : null;
-
-            if (!menuIcon) {
-                return;
-            }
-
-            var defaultLogo = '<?php echo esc_js( NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL ); ?>';
-            menuIcon.src = defaultLogo;
-        });
-    </script>
-    <?php endif; ?>
     <?php
 }
 add_action( 'admin_head', 'nolantis_admin_assets' );
@@ -118,7 +106,7 @@ add_action( 'admin_head', 'nolantis_admin_assets' );
 function nolantis_render_plugin_list_logo() {
     $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 
-    if ( ! $screen || 'plugins' !== $screen->id || ! file_exists( NOLANTIS_PLUGIN_LOGO_PATH ) ) {
+    if ( ! $screen || 'plugins' !== $screen->id || ! file_exists( NOLANTIS_PLUGIN_ICON_PATH ) ) {
         return;
     }
     ?>
@@ -140,7 +128,7 @@ function nolantis_render_plugin_list_logo() {
             }
 
             var logo = document.createElement('img');
-            logo.src = '<?php echo esc_js( NOLANTIS_PLUGIN_LOGO_URL ); ?>';
+            logo.src = '<?php echo esc_js( NOLANTIS_PLUGIN_ICON_URL ); ?>';
             logo.alt = 'Nolantis';
             logo.className = 'nolantis-plugin-list-logo';
             row.prepend(logo);
@@ -165,145 +153,33 @@ function nolantis_render_update_tools_card() {
     ?>
     <div class="nolantis-card">
         <h2>Actualizaciones</h2>
-        <?php settings_errors(); ?>
         <?php if ( $notice ) : ?>
             <div class="<?php echo esc_attr( $notice['class'] ); ?>"><p><?php echo esc_html( $notice['message'] ); ?></p></div>
         <?php endif; ?>
-        <p><strong>Repositorio:</strong> GitHub `GinesPalazon/nolantis-gestion-plugin`</p>
+        <p><strong>Repositorio:</strong> GitHub <code>GinesPalazon/nolantis-gestion-plugin</code></p>
         <?php if ( $update ) : ?>
-            <p><strong>Ultima actualizacion detectada:</strong> <?php echo esc_html( $update->version ); ?></p>
+            <p><strong>Última actualización detectada:</strong> <?php echo esc_html( $update->version ); ?></p>
         <?php else : ?>
-            <p><strong>Ultima actualizacion detectada:</strong> ninguna pendiente ahora mismo.</p>
+            <p><strong>Última actualización detectada:</strong> ninguna pendiente ahora mismo.</p>
         <?php endif; ?>
-        <p><strong>Canal de actualizacion:</strong> GitHub Releases publico activo.</p>
+        <p><strong>Canal de actualización:</strong> GitHub Releases (repositorio público).</p>
+        <p><strong>Actualización automática:</strong>
+            <?php if ( nolantis_is_self_auto_update_enabled() ) : ?>
+                activada. Las versiones nuevas se instalan solas, solo desde las releases de <code><?php echo esc_html( NOLANTIS_UPDATE_REPOSITORY ); ?></code> y comprobando su huella SHA-256 antes de instalarlas.
+            <?php else : ?>
+                desactivada en esta web (entorno local o de desarrollo, o constante <code>NOLANTIS_DISABLE_AUTO_UPDATE</code>). Las versiones nuevas hay que instalarlas a mano, con la misma verificación.
+            <?php endif; ?>
+        </p>
         <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
             <?php wp_nonce_field( 'nolantis_check_updates' ); ?>
             <input type="hidden" name="action" value="nolantis_check_updates" />
-            <?php submit_button( 'Buscar actualizacion', 'secondary', 'submit', false ); ?>
+            <?php submit_button( 'Buscar actualización', 'secondary', 'submit', false ); ?>
         </form>
     </div>
     <?php
 }
 
-function nolantis_render_smtp_wizard_notice() {
-    $result = isset( $_GET['nolantis_smtp_wizard'] ) ? sanitize_key( wp_unslash( $_GET['nolantis_smtp_wizard'] ) ) : '';
-
-    if ( 'default_applied' === $result ) {
-        echo '<div class="notice notice-success"><p>Se han aplicado los ajustes SMTP por defecto de Nolantis.</p></div>';
-    } elseif ( 'custom' === $result ) {
-        echo '<div class="notice notice-info"><p>Ayuda asistida completada. Puedes configurar tus propios ajustes SMTP en el formulario.</p></div>';
-    } elseif ( 'skipped' === $result ) {
-        echo '<div class="notice notice-info"><p>Ayuda asistida omitida. Puedes configurar SMTP manualmente cuando quieras.</p></div>';
-    }
-}
-
-function nolantis_render_smtp_wizard_card() {
-    if ( ! nolantis_should_show_smtp_wizard() ) {
-        return;
-    }
-
-    ?>
-    <div class="nolantis-card">
-        <h2>Ayuda asistida SMTP</h2>
-        <p>Podemos preparar el formulario SMTP con valores seguros por defecto o puedes introducir directamente los datos propios de esta web.</p>
-        <p><strong>Valores iniciales:</strong> SMTP desactivado, puerto <code>587</code>, cifrado <code>TLS</code>, autenticacion activada y remitente forzado activado.</p>
-        <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
-            <?php wp_nonce_field( 'nolantis_smtp_wizard' ); ?>
-            <input type="hidden" name="action" value="nolantis_smtp_wizard" />
-            <div class="nolantis-wizard-actions">
-                <button type="submit" class="button button-primary" name="nolantis_smtp_wizard_choice" value="default">Usar ajustes Nolantis</button>
-                <button type="submit" class="button" name="nolantis_smtp_wizard_choice" value="custom">Usar mis propios ajustes</button>
-                <button type="submit" class="button-link" name="nolantis_smtp_wizard_choice" value="skip">Saltar ayuda asistida</button>
-            </div>
-        </form>
-    </div>
-    <?php
-}
-
-function nolantis_render_limit_login_page() {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        return;
-    }
-
-    $ip       = nolantis_get_request_ip();
-    $lock     = nolantis_get_limit_login_lock( $ip );
-    $attempts = nolantis_get_limit_login_attempts( $ip );
-    $remaining = nolantis_get_limit_login_remaining_attempts( $ip );
-    ?>
-    <div class="wrap">
-        <?php nolantis_render_page_header( 'Limit Login' ); ?>
-        <div class="nolantis-card">
-            <p>Este sistema bloquea por IP los intentos fallidos de acceso al panel.</p>
-            <p><strong>Reglas activas:</strong> 3 errores bloquean 24 horas. Si la misma IP vuelve a acumular 3 errores dentro de la ventana de reincidencia, el bloqueo pasa a 7 dias. Al terminar ese bloqueo largo, el estado se limpia automaticamente.</p>
-            <p><strong>Tu IP detectada:</strong> <?php echo esc_html( $ip ? $ip : 'No disponible' ); ?></p>
-            <p><strong>Intentos fallidos actuales para esta IP:</strong> <?php echo esc_html( (string) $attempts ); ?></p>
-            <p><strong>Intentos restantes antes del bloqueo:</strong> <?php echo esc_html( (string) $remaining ); ?></p>
-            <p><strong>Estado actual:</strong>
-                <?php
-                if ( $lock ) {
-                    echo esc_html( sprintf( 'Bloqueada hasta %s.', wp_date( 'Y-m-d H:i:s', (int) $lock['locked_until'] ) ) );
-                } else {
-                    echo esc_html( 'Sin bloqueo activo.' );
-                }
-                ?>
-            </p>
-        </div>
-        <?php nolantis_render_update_tools_card(); ?>
-    </div>
-    <?php
-}
-
-function nolantis_render_smtp_page() {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        return;
-    }
-
-    $test_recipient = get_option( 'admin_email', '' );
-    ?>
-    <div class="wrap">
-        <?php nolantis_render_page_header( 'SMTP' ); ?>
-        <?php settings_errors( NOLANTIS_SMTP_OPTION ); ?>
-        <?php nolantis_render_smtp_wizard_notice(); ?>
-        <?php nolantis_render_test_mail_notice(); ?>
-        <?php nolantis_render_smtp_wizard_card(); ?>
-        <form action="options.php" method="post">
-            <?php
-            settings_fields( 'nolantis_settings_group' );
-            do_settings_sections( 'nolantis-smtp' );
-            submit_button( 'Guardar ajustes' );
-            ?>
-        </form>
-        <div class="nolantis-card">
-            <h2>Enviar correo de prueba</h2>
-            <p>Utiliza este formulario para comprobar que la configuracion SMTP funciona correctamente.</p>
-            <form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
-                <?php wp_nonce_field( 'nolantis_send_test_email' ); ?>
-                <input type="hidden" name="action" value="nolantis_send_test_email" />
-                <table class="form-table" role="presentation">
-                    <tr>
-                        <th scope="row">
-                            <label for="nolantis_test_recipient">Destinatario</label>
-                        </th>
-                        <td>
-                            <input
-                                id="nolantis_test_recipient"
-                                name="test_recipient"
-                                type="email"
-                                class="regular-text"
-                                value="<?php echo esc_attr( $test_recipient ); ?>"
-                                placeholder="admin@tudominio.com"
-                                required
-                            />
-                            <p class="description">Se enviara un email de prueba usando la configuracion SMTP guardada arriba.</p>
-                        </td>
-                    </tr>
-                </table>
-                <?php submit_button( 'Enviar correo de prueba', 'secondary', 'submit', false ); ?>
-            </form>
-        </div>
-    </div>
-    <?php
-}
+// La pagina de Limit Login (nolantis_render_limit_login_page) esta en includes/limit-login/admin.php.
 
 function nolantis_render_admin_access_page() {
     if ( ! current_user_can( 'manage_options' ) ) {
@@ -328,12 +204,17 @@ function nolantis_render_admin_access_page() {
             ?>
         </form>
         <div class="nolantis-card">
-            <p>La funcionalidad cambia la ruta publica del login. Una vez dentro, WordPress seguira usando el panel normal en <code>wp-admin</code> para usuarios ya autenticados.</p>
-            <?php if ( ! empty( $settings['enabled'] ) && $access ) : ?>
+            <?php if ( nolantis_admin_access_is_emergency_disabled() ) : ?>
+                <div class="notice notice-error inline"><p><strong>Ruta personalizada desactivada de emergencia</strong> con <code>NOLANTIS_ADMIN_ACCESS_DISABLE</code> en <code>wp-config.php</code>. Quita esa línea cuando hayas recuperado el acceso.</p></div>
+            <?php endif; ?>
+            <p>La funcionalidad cambia la ruta pública del login. Una vez dentro, WordPress sigue usando el panel normal en <code>wp-admin</code>.</p>
+            <?php if ( nolantis_is_admin_access_enabled() && $access ) : ?>
                 <p><strong>Ruta activa:</strong> <a href="<?php echo esc_url( $access ); ?>" target="_blank" rel="noreferrer"><?php echo esc_html( $access ); ?></a></p>
             <?php else : ?>
                 <p><strong>Ruta activa:</strong> desactivada. WordPress sigue usando sus rutas por defecto.</p>
             <?php endif; ?>
+            <p><strong>Si te quedas fuera:</strong> añade <code>define( 'NOLANTIS_ADMIN_ACCESS_DISABLE', true );</code> en <code>wp-config.php</code>, entra por <code>wp-login.php</code>, corrige el ajuste y borra la línea.</p>
+            <p class="description">Ten en cuenta que algunos temas muestran enlaces de "Acceder" (por ejemplo, en los comentarios si exiges registro para comentar o en el widget "Meta"): esos enlaces llevan a la ruta personalizada.</p>
         </div>
     </div>
     <?php
@@ -356,49 +237,8 @@ function nolantis_render_general_settings_page() {
             ?>
         </form>
         <div class="nolantis-card">
-            <p>Estos ajustes aplican cambios globales de comportamiento en WordPress. Antes de activar una opcion, revisa si la web necesita mantener compatibilidad con comentarios, formularios o integraciones de terceros.</p>
+            <p>Estos ajustes aplican cambios globales de comportamiento en WordPress. Antes de activar una opción, revisa si la web necesita mantener compatibilidad con comentarios, formularios o integraciones de terceros.</p>
         </div>
     </div>
     <?php
-}
-
-function nolantis_render_test_mail_notice() {
-    if ( ! isset( $_GET['nolantis_test_mail'] ) ) {
-        return;
-    }
-
-    $status    = sanitize_key( wp_unslash( $_GET['nolantis_test_mail'] ) );
-    $recipient = isset( $_GET['recipient'] ) ? sanitize_email( wp_unslash( $_GET['recipient'] ) ) : '';
-    $messages  = array(
-        'success'       => array(
-            'class'   => 'notice notice-success',
-            'message' => sprintf( 'Correo de prueba enviado correctamente a %s.', $recipient ),
-        ),
-        'invalid_email' => array(
-            'class'   => 'notice notice-error',
-            'message' => 'El destinatario indicado no es valido.',
-        ),
-        'smtp_disabled' => array(
-            'class'   => 'notice notice-warning',
-            'message' => 'Activa SMTP y guarda la configuracion antes de enviar un correo de prueba.',
-        ),
-        'missing_host'  => array(
-            'class'   => 'notice notice-warning',
-            'message' => 'Debes indicar el servidor SMTP antes de enviar un correo de prueba.',
-        ),
-        'failed'        => array(
-            'class'   => 'notice notice-error',
-            'message' => 'No se pudo enviar el correo de prueba. Revisa la configuracion SMTP y los logs del servidor.',
-        ),
-    );
-
-    if ( ! isset( $messages[ $status ] ) ) {
-        return;
-    }
-
-    printf(
-        '<div class="%1$s"><p>%2$s</p></div>',
-        esc_attr( $messages[ $status ]['class'] ),
-        esc_html( $messages[ $status ]['message'] )
-    );
 }

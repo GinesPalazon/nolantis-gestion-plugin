@@ -11,7 +11,11 @@ services:
       WORDPRESS_DB_USER: ${DB_USER}
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
       WORDPRESS_DEBUG: 1
+      # Entorno local: el plugin no se actualiza solo aqui (la carpeta montada es el codigo de trabajo).
+      WORDPRESS_CONFIG_EXTRA: "define( 'WP_ENVIRONMENT_TYPE', 'local' );"
     volumes:
+      # ⬇ Archivos de WordPress (core, wp-config.php...): se conservan al recrear el contenedor
+      - wp_data:/var/www/html
       # ⬇ Monta la carpeta real del plugin para desarrollo en caliente
       - ./plugin/nolantis-gestion:/var/www/html/wp-content/plugins/nolantis-gestion
       # ⬇ Persiste uploads sin tapar la instalacion ni el plugin montado
@@ -53,5 +57,6 @@ networks:
     driver: bridge
 
 volumes:
+  wp_data:
   wp_uploads:
   db_data:

@@ -4,3 +4,5 @@
 .DS_Store
 Thumbs.db
 *.zip
+/vendor/
+tests/last.html

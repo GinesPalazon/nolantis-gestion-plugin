@@ -35,17 +35,30 @@ trap cleanup EXIT
 mkdir -p "${stage_dir}/${plugin_slug}"
 cp -R "${root_dir}/plugin/${plugin_slug}/." "${stage_dir}/${plugin_slug}/"
 
+# En GitHub Actions, "composer install" genera vendor/ en la raiz a partir de composer.lock:
+# se usa esa copia, recien instalada, en lugar de la que hay dentro del plugin.
 if [[ -d "${root_dir}/vendor" ]]; then
+    rm -rf "${stage_dir}/${plugin_slug}/vendor"
     mkdir -p "${stage_dir}/${plugin_slug}/vendor"
     cp -R "${root_dir}/vendor/." "${stage_dir}/${plugin_slug}/vendor/"
 fi
+
+if [[ ! -f "${stage_dir}/${plugin_slug}/vendor/autoload.php" ]]; then
+    echo "Falta vendor/autoload.php: el actualizador del plugin no funcionaria." >&2
+    exit 1
+fi
+
+# readme.txt de la raiz del repositorio (el actualizador lo lee de ahi para "Ver detalles").
+cp "${root_dir}/readme.txt" "${stage_dir}/${plugin_slug}/readme.txt"
 
 (
     cd "${stage_dir}"
     zip -rq "${tmp_output_file}" "${plugin_slug}" \
         -x '*/.DS_Store' \
         -x '*/__MACOSX/*' \
-        -x '*/.git/*'
+        -x '*/.git/*' \
+        -x '*/.gitignore' \
+        -x '*/Thumbs.db'
 )
 
 cp "${tmp_output_file}" "${output_file}"

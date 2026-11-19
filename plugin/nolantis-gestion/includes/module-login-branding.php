@@ -20,14 +20,32 @@ function nolantis_get_site_logo_url() {
     return is_string( $site_icon_url ) ? $site_icon_url : '';
 }
 
+/**
+ * Cadena valida para CSS (content: "..."; url("...")).
+ *
+ * Se escapan con la sintaxis de CSS (\\HEX ) las comillas, la barra invertida, los saltos de linea
+ * y los caracteres < y >, asi el texto no puede cerrar la etiqueta <style>. Las tildes y la n se
+ * dejan tal cual (la pagina es UTF-8); con json_encode saldrian como \\u00ed y CSS no las entiende.
+ */
+function nolantis_css_string( $value ) {
+    $escaped = preg_replace_callback(
+        '/[\\\\"\'<>\x00-\x1f\x7f]/',
+        function ( $match ) {
+            return '\\' . dechex( ord( $match[0] ) ) . ' ';
+        },
+        (string) $value
+    );
+
+    return '"' . $escaped . '"';
+}
+
 function nolantis_login_branding_styles() {
     $site_logo_url     = nolantis_get_site_logo_url();
-    $nolantis_logo_url = file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ? NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL : '';
     $site_name         = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     ?>
     <style>
         body.login {
-            background: #063259;
+            background: #080a0f;
             color: #ffffff;
         }
 
@@ -36,13 +54,14 @@ function nolantis_login_branding_styles() {
             padding-top: 5vh;
         }
 
-        body.login div#login h1 {
+        /* Solo el logo de arriba ("> h1"): otras pantallas tienen su propio h1 dentro del formulario. */
+        body.login div#login > h1 {
             margin-bottom: 18px;
             text-align: center;
         }
 
-        body.login div#login h1::before {
-            content: <?php echo wp_json_encode( $site_name ); ?>;
+        body.login div#login > h1::before {
+            content: <?php echo nolantis_css_string( $site_name ); ?>;
             display: block;
             margin-bottom: 18px;
             color: #ffffff;
@@ -52,24 +71,25 @@ function nolantis_login_branding_styles() {
             letter-spacing: 0.01em;
         }
 
-        body.login div#login h1 a {
+        body.login div#login > h1 a {
             width: 220px;
             height: 92px;
             margin: 0 auto;
-            background-image: <?php echo $site_logo_url ? "url('" . esc_url_raw( $site_logo_url ) . "')" : 'none'; ?>;
+            background-image: <?php echo $site_logo_url ? 'url(' . nolantis_css_string( esc_url_raw( $site_logo_url ) ) . ')' : 'none'; ?>;
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
             pointer-events: <?php echo $site_logo_url ? 'auto' : 'none'; ?>;
         }
 
-        body.login #loginform,
-        body.login #registerform,
-        body.login #lostpasswordform {
+        /* Todos los formularios de la pantalla de acceso: acceso, registro, contrasena olvidada,
+           contrasena nueva, confirmar el correo del administrador... */
+        body.login div#login form {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.16);
             box-shadow: none;
             border-radius: 16px;
+            color: #ffffff;
         }
 
         body.login label,
@@ -81,24 +101,35 @@ function nolantis_login_branding_styles() {
             color: #ffffff !important;
         }
 
+        body.login div#login form a:not(.button) {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        /* Pantalla "Verificación del correo electrónico de administración". */
+        body.login .admin-email__heading {
+            color: #ffffff;
+            border-bottom-color: rgba(255, 255, 255, 0.16);
+        }
+
         body.login form .input,
         body.login input[type="text"],
         body.login input[type="password"] {
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid rgba(255, 255, 255, 0.35);
-            color: #0b1f33;
+            color: #080a0f;
             border-radius: 10px;
             box-shadow: none;
         }
 
         body.login .button.wp-hide-pw .dashicons {
-            color: #063259;
+            color: #080a0f;
         }
 
         body.login .button-primary {
             background: #ffffff;
             border-color: #ffffff;
-            color: #063259;
+            color: #080a0f;
             border-radius: 10px;
             box-shadow: none;
             text-shadow: none;
@@ -107,9 +138,24 @@ function nolantis_login_branding_styles() {
 
         body.login .button-primary:hover,
         body.login .button-primary:focus {
-            background: #d9e6f2;
-            border-color: #d9e6f2;
-            color: #063259;
+            background: #e6e8ec;
+            border-color: #e6e8ec;
+            color: #080a0f;
+        }
+
+        /* Botones secundarios dentro de los formularios (p. ej. "Actualizar" en la verificacion del correo). */
+        body.login div#login form .button:not(.button-primary):not(.wp-hide-pw) {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.6);
+            color: #ffffff;
+            border-radius: 10px;
+        }
+
+        body.login div#login form .button:not(.button-primary):not(.wp-hide-pw):hover,
+        body.login div#login form .button:not(.button-primary):not(.wp-hide-pw):focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #ffffff;
+            color: #ffffff;
         }
 
         body.login .message,
@@ -150,11 +196,6 @@ function nolantis_login_branding_styles() {
             object-fit: contain;
         }
     </style>
-    <?php if ( $nolantis_logo_url ) : ?>
-        <script>
-            window.nolantisLoginLogoUrl = '<?php echo esc_js( $nolantis_logo_url ); ?>';
-        </script>
-    <?php endif; ?>
     <?php
 }
 add_action( 'login_enqueue_scripts', 'nolantis_login_branding_styles' );
@@ -164,13 +205,16 @@ function nolantis_login_header_url() {
 }
 add_filter( 'login_headerurl', 'nolantis_login_header_url' );
 
+/**
+ * WordPress imprime este texto sin escapar dentro del enlace del logo.
+ */
 function nolantis_login_header_text() {
-    return wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    return esc_html( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) );
 }
 add_filter( 'login_headertext', 'nolantis_login_header_text' );
 
 function nolantis_login_footer_credit() {
-    $logo_url = file_exists( NOLANTIS_PLUGIN_LOGO_WHITE_SF_PATH ) ? NOLANTIS_PLUGIN_LOGO_WHITE_SF_URL : '';
+    $logo_url = file_exists( NOLANTIS_PLUGIN_ICON_PATH ) ? NOLANTIS_PLUGIN_ICON_URL : '';
     ?>
     <p class="nolantis-login-credit">
         <?php if ( $logo_url ) : ?>
